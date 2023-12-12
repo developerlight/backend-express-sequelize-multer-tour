@@ -14,13 +14,13 @@ module.exports = function (app) {
     // packages
     app.get(
         "/api/admin/packages",
-        // [authJwt.verifyToken, authJwt.isAdmin],
+        [authJwt.verifyToken, authJwt.isAdmin],
         controller.getPackages
     );
 
     app.post(
         '/api/admin/packages',
-        // [authJwt.verifyToken, authJwt.isAdmin],
+        [authJwt.verifyToken, authJwt.isAdmin],
         multer.single('image'),
         controller.postPackages
     )
