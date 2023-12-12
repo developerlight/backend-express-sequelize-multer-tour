@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        /* Tambahkan styling CSS sesuai kebutuhan */
+        #updateModal {
+            display: none;
+            /* Tambahkan gaya modal sesuai kebutuhan */
+        }
+    </style>
+</head>
+<body>
+    <h2>Dashboard</h2>
+    
+    <!-- Form Input Data -->
+    <form id="inputForm">
+        <label for="placeName">Place Name:</label>
+        <input type="text" id="placeName" name="placeName" required>
+        <br>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea>
+        <br>
+        <label for="rating">Rating:</label>
+        <input type="number" id="rating" name="rating" min="0" max="10" step="0.1" required>
+        <br>
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" min="0" required>
+        <br>
+        <label for="image">Image:</label>
+        <input type="file" id="image" name="image" accept="image/*" required>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Tabel untuk Menampilkan Data dari Server -->
+    <h3>Existing Data:</h3>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Place Name</th>
+                <th>Description</th>
+                <th>Rating</th>
+                <th>Price</th>
+                <th>Image</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="dataBody">
+            <!-- Data dari Server akan ditampilkan di sini -->
+        </tbody>
+    </table>
+
+    <!-- Modal untuk Form Update -->
+    <div id="updateModal" style="display: none;">
+        <h2>Update Data</h2>
+        <form id="updateForm">
+            <label for="updatePlaceName">Place Name:</label>
+            <input type="text" id="updatePlaceName" name="updatePlaceName" required>
+            <br>
+            <label for="updateDescription">Description:</label>
+            <textarea id="updateDescription" name="updateDescription" required></textarea>
+            <br>
+            <label for="updateRating">Rating:</label>
+            <input type="number" id="updateRating" name="updateRating" min="0" max="10" step="0.1" required>
+            <br>
+            <label for="updatePrice">Price:</label>
+            <input type="number" id="updatePrice" name="updatePrice" min="0" required>
+            <br>
+            <label for="updateImage">New Image:</label>
+            <input type="file" id="updateImage" name="updateImage" accept="image/*">
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <script>
+        // Fungsi untuk menampilkan data ke dalam tabel
+        function displayData(data) {
+            const dataBody = document.getElementById('dataBody');
+            dataBody.innerHTML = ''; // Bersihkan isi tbody
+            
+            // Iterasi data dan tambahkan ke dalam tabel
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.placeName}</td>
+                    <td>${item.description}</td>
+                    <td>${item.rating}</td>
+                    <td>${item.price}</td>
+                    <td><img src="${item.image}" alt="Image" style="width: 100px;"></td>
+                    <td><button onclick="openUpdateModal(${item.id})">Update</button></td>
+                `;
+                dataBody.appendChild(row);
+            });
+        }
+
+        // Event listener untuk form input data
+        document.getElementById('inputForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const placeName = document.getElementById('placeName').value;
+            const description = document.getElementById('description').value;
+            const rating = document.getElementById('rating').value;
+            const price = document.getElementById('price').value;
+            const image = document.getElementById('image').files[0];
+
+            // Kirim data ke server
+            const formData = new FormData();
+            formData.append('placeName', placeName);
+            formData.append('description', description);
+            formData.append('rating', rating);
+            formData.append('price', price);
+            formData.append('image', image);
+
+            fetch('http://localhost:8080/api/admin/packages', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server response:', data);
+                alert('Data submitted successfully!');
+                fetchDataAndDisplay(); // Panggil fungsi untuk menampilkan data baru
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error submitting data.');
+            });
+        });
+
+        // Fungsi untuk membuka modal update dan mengisi form dengan data yang sesuai
+        function openUpdateModal(id) {
+            const updateModal = document.getElementById('updateModal');
+            const updateForm = document.getElementById('updateForm');
+
+            // Tampilkan modal
+            updateModal.style.display = 'block';
+
+            // Ambil data dari server berdasarkan ID
+            fetch(`http://localhost:8080/api/admin/packages/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Isi form dengan data yang sesuai
+                    document.getElementById('updatePlaceName').value = data.placeName;
+                    document.getElementById('updateDescription').value = data.description;
+                    document.getElementById('updateRating').value = data.rating;
+                    document.getElementById('updatePrice').value = data.price;
+
+                    // Handle form submission untuk update
+                    updateForm.addEventListener('submit', function (event) {
+                        event.preventDefault();
+
+                        // Buat objek FormData baru untuk mengirim data
+                        const updateFormData = new FormData();
+
+                        // Tambahkan data ke objek FormData
+                        updateFormData.append('placeName', document.getElementById('updatePlaceName').value);
+                        updateFormData.append('description', document.getElementById('updateDescription').value);
+                        updateFormData.append('rating', document.getElementById('updateRating').value);
+                        updateFormData.append('price', document.getElementById('updatePrice').value);
+
+                        // Ambil file gambar yang dipilih
+                        const newImage = document.getElementById('updateImage').files[0];
+                        if (newImage) {
+                            updateFormData.append('image', newImage);
+                        }
+
+                        // Kirim data update ke server
+                        fetch(`http://localhost:8080/api/admin/packages/${id}`, {
+                            method: 'PUT',
+                            body: updateFormData,
+                        })
+                        .then(response => response.json())
+                        .then(updatedData => {
+                            console.log('Server response:', updatedData);
+                            alert('Data updated successfully!');
+                            updateModal.style.display = 'none'; // Tutup modal setelah berhasil
+                            fetchDataAndDisplay(); // Panggil fungsi untuk menampilkan data baru
+                        })
+                        .catch(error => {
+                            console.error('Error updating data:', error);
+                            alert('Error updating data.');
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Fungsi untuk mengambil data dari server dan menampilkannya
+        function fetchDataAndDisplay() {
+            fetch('http://localhost:8080/api/admin/packages')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Server response:', data);
+                    displayData(data.tb_packages); // Panggil fungsi displayData untuk menampilkan data
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Panggil fungsi saat halaman dimuat untuk pertama kali
+        fetchDataAndDisplay();
+    </script>
+</body>
+</html>
